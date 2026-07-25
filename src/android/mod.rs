@@ -185,6 +185,7 @@ impl InnerWebView {
       autoplay,
       user_agent,
       javascript_disabled,
+      bounds,
       ..
     } = attributes;
 
@@ -323,6 +324,7 @@ impl InnerWebView {
       user_agent,
       initialization_scripts,
       javascript_disabled,
+      bounds,
     };
 
     WEBVIEW_ATTRIBUTES

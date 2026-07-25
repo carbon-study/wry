@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
 
-use crate::{Error, InitializationScript, RGBA};
+use crate::{Error, InitializationScript, Rect, RGBA};
 use crossbeam_channel::*;
 use jni::{
   errors::Result as JniResult,
@@ -168,7 +168,7 @@ impl<'a> MainPipe<'a> {
           initialization_scripts,
           id,
           javascript_disabled,
-          ..
+          bounds,
         } = attrs;
 
         let string_class = self.env.find_class("java/lang/String")?;
@@ -313,12 +313,26 @@ impl<'a> MainPipe<'a> {
           &[(&ipc).into(), (&ipc_str).into()],
         )?;
 
-        // Set content view
+        let (left, top, width, height) = bounds
+          .map(|bounds| {
+            let position = bounds.position.to_physical::<i32>(1.0);
+            let size = bounds.size.to_physical::<i32>(1.0);
+            (position.x, position.y, size.width, size.height)
+          })
+          .unwrap_or((0, 0, -1, -1));
+
+        // Add webview to the activity view hierarchy
         self.env.call_method(
           &activity,
-          "setContentView",
-          "(Landroid/view/View;)V",
-          &[(&webview).into()],
+          "addWebView",
+          format!("(L{webview_class_name};IIII)V"),
+          &[
+            (&webview).into(),
+            left.into(),
+            top.into(),
+            width.into(),
+            height.into(),
+          ],
         )?;
 
         if let Some(on_webview_created) = on_webview_created {
@@ -644,6 +658,7 @@ pub(crate) struct CreateWebViewAttributes {
   pub user_agent: Option<String>,
   pub initialization_scripts: Vec<InitializationScript>,
   pub javascript_disabled: bool,
+  pub bounds: Option<Rect>,
 }
 
 // SAFETY: only use this when you are sure the span will be dropped on the same thread it was entered

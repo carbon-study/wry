@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.webkit.WebView
 import android.view.KeyEvent
+import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
@@ -52,6 +53,7 @@ object WryLifecycleObserver : DefaultLifecycleObserver {
 
 abstract class WryActivity : AppCompatActivity() {
     private lateinit var mWebView: RustWebView
+    private var mWebViewContainer: FrameLayout? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var activityLauncher: ActivityResultLauncher<Intent>
     private var permissionListener: ((Boolean?) -> Unit)? = null
@@ -92,6 +94,19 @@ abstract class WryActivity : AppCompatActivity() {
         }
 
         onWebViewCreate(webView)
+    }
+
+    fun addWebView(webView: RustWebView, left: Int, top: Int, width: Int, height: Int) {
+        val container = mWebViewContainer ?: FrameLayout(this).also {
+            mWebViewContainer = it
+            setContentView(it)
+        }
+
+        val params = FrameLayout.LayoutParams(width, height)
+        params.leftMargin = left
+        params.topMargin = top
+        container.addView(webView, params)
+        webView.requestFocus()
     }
 
     val version: String
